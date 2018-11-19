@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Rates and conversions</string>
+    <string name="ma_error">No data to show</string>
+    <string name="currency_input_hint">0</string>
+</resources>
