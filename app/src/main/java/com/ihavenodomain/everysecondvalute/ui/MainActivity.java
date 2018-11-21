@@ -37,7 +37,10 @@ public class MainActivity extends AppCompatActivity {
         LinearLayoutManager manager = new LinearLayoutManager(this);
         rvItems.setLayoutManager(manager);
 
-        adapter = new MyAdapter(base -> viewModel.startCurrencyLoadingSequence(base));
+        adapter = new MyAdapter(base -> {
+            viewModel.startCurrencyLoadingSequence(base);
+            rvItems.smoothScrollToPosition(0);
+        });
 
         rvItems.setAdapter(adapter);
         rvItems.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
