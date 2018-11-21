@@ -1,17 +1,23 @@
 package com.ihavenodomain.everysecondvalute.ui.mainList;
 
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
 import android.view.ViewGroup;
 
 import com.ihavenodomain.everysecondvalute.model.CurrencyInfo;
 import com.ihavenodomain.everysecondvalute.model.CurrencyRate;
+import com.ihavenodomain.everysecondvalute.ui.MainActivity;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MyAdapter extends RecyclerView.Adapter<CurrencyViewHolder> {
+public class MyAdapter extends RecyclerView.Adapter<MyViewHolder> {
+    private static final int TYPE_BASE = 0;
+    private static final int TYPE_GENERIC = 1;
+
     private boolean onBind;
 
     private CurrencyInfo info = new CurrencyInfo();
@@ -20,30 +26,35 @@ public class MyAdapter extends RecyclerView.Adapter<CurrencyViewHolder> {
     private double multiplier = 1;
     private String multiplierString = String.valueOf(multiplier);
 
-    private IMultiplierChangeCallback callback = text -> {
-        updateMultiplier(text);
+    private MyViewHolder staticHolder;
+    private boolean needRecreate = false;
 
-        if (!onBind) {
-            notifyItemRangeChanged(1, items.size());
-        }
-    };
+    private MainActivity.NewDataNeededCallback newDataNeededCallback;
+
+    public MyAdapter(MainActivity.NewDataNeededCallback newDataNeededCallback) {
+        this.newDataNeededCallback = newDataNeededCallback;
+    }
 
     public void setInfo(CurrencyInfo info) {
-        CurrencyRate baseRate = new CurrencyRate(info.getBase(), multiplier);
+        CurrencyRate baseRate = new CurrencyRate(info.getBase(), multiplier, true);
 
         if (this.info.getBase() == null) {
-            this.info.setBase(info.getBase());
             items.add(baseRate);
         } else if (!this.info.getBase().equals(info.getBase())) {
             items.set(0, baseRate);
         }
 
+        this.info.setBase(info.getBase());
         this.info.setRates(info.getRates());
 
         items.subList(1, items.size()).clear();
         items.addAll(info.getRatesList());
 
-        notifyIfBind();
+        if (!firstBinded || needRecreate) {
+            notifyIfBind();
+        } else {
+            notifyRangeIfBind();
+        }
     }
 
     private void notifyIfBind() {
@@ -52,27 +63,58 @@ public class MyAdapter extends RecyclerView.Adapter<CurrencyViewHolder> {
         }
     }
 
-    @NonNull
-    @Override
-    public CurrencyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int i) {
-        return new CurrencyViewHolder(parent);
+    private void notifyRangeIfBind() {
+        if (!onBind) {
+            notifyItemRangeChanged(1, items.size());
+        }
+    }
+
+    private MyViewHolder getStaticViewHolder(@NonNull ViewGroup parent) {
+        if (staticHolder == null || needRecreate) {
+            staticHolder = new MyViewHolder(parent, watcher);
+            staticHolder.setIsRecyclable(false);
+        }
+        return staticHolder;
     }
 
     @Override
-    public void onBindViewHolder(@NonNull CurrencyViewHolder holder, int i) {
-        onBind = true;
-        CurrencyRate model = items.get(i);
+    public int getItemViewType(int position) {
+        CurrencyRate rate = items.get(position);
+        if (rate.isBase()) {
+            return TYPE_BASE;
+        } else {
+            return TYPE_GENERIC;
+        }
+    }
 
-        holder.setIsBase(i == 0);
-        holder.setCallback(callback);
-        holder.setName(model.getName());
+    @NonNull
+    @Override
+    public MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == TYPE_BASE) {
+            return getStaticViewHolder(parent);
+        } else {
+            return new MyViewHolder(parent, itemClicker);
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull MyViewHolder holder, int i) {
+        onBind = true;
+        CurrencyRate item = items.get(i);
+        boolean base = item.isBase();
+
+        holder.setName(item.getName());
         if (i != 0) {
-            holder.setValue(String.valueOf(model.getValue() * multiplier));
-        } else if (!holder.isEtInFocus()) {
+            holder.setValue(String.valueOf(item.getValue() * multiplier));
+        } else if (!firstBinded || needRecreate) {
             holder.setValue(multiplierString);
+            firstBinded = true;
+            needRecreate = false;
         }
         onBind = false;
     }
+
+    private boolean firstBinded = false;
 
     @Override
     public int getItemCount() {
@@ -86,7 +128,7 @@ public class MyAdapter extends RecyclerView.Adapter<CurrencyViewHolder> {
     }
 
     /**
-     * @param text text value from EditText {@link CurrencyViewHolder#etCurrency}
+     * @param text text value from EditText {@link MyViewHolder#etCurrency}
      */
     private void updateMultiplier(String text) {
         try {
@@ -98,7 +140,34 @@ public class MyAdapter extends RecyclerView.Adapter<CurrencyViewHolder> {
         }
     }
 
-    public interface IMultiplierChangeCallback {
-        void onMultiplierTextChanged(String text);
+    private TextWatcher watcher = new TextWatcher() {
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+        @Override
+        public void afterTextChanged(Editable s) {
+            updateMultiplier(s.toString());
+            notifyRangeIfBind();
+        }
+    };
+
+    private ItemClickListener itemClicker = new ItemClickListener() {
+        @Override
+        public void onItemClick(int position) {
+            needRecreate = true;
+            String baseNew = items.get(position).getName();
+            String newMultiplier = String.valueOf(items.get(position).getValue());
+
+            updateMultiplier(newMultiplier);
+            newDataNeededCallback.requestNewRates(baseNew);
+        }
+    };
+
+    public interface ItemClickListener {
+        void onItemClick(int position);
     }
 }

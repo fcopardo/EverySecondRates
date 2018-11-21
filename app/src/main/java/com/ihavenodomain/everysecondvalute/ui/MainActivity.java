@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.ihavenodomain.everysecondvalute.R;
@@ -32,11 +33,14 @@ public class MainActivity extends AppCompatActivity {
         tvError = findViewById(R.id.tv_error);
 
         rvItems = findViewById(R.id.rv_items);
-        rvItems.setLayoutManager(new LinearLayoutManager(this));
 
-        adapter = new MyAdapter();
+        LinearLayoutManager manager = new LinearLayoutManager(this);
+        rvItems.setLayoutManager(manager);
+
+        adapter = new MyAdapter(base -> viewModel.startCurrencyLoadingSequence(base));
 
         rvItems.setAdapter(adapter);
+        rvItems.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
     }
 
     private void bind() {
@@ -67,5 +71,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         bind();
+    }
+
+    public interface NewDataNeededCallback {
+        void requestNewRates(String base);
     }
 }

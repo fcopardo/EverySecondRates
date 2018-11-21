@@ -28,12 +28,12 @@ public class CurrencyRepository {
                 .flatMap(tick -> ApiConnection.getInstance().getApi().getCurrencyInfo(baseCurrency))
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnError(err -> {
-                    // прочитать из БД
-                    callback.currencyLoaded(null); // пока нулл
+                    // some kind of local storage reading may be used here
+                    callback.currencyLoaded(null);
                 })
                 .retry()
                 .subscribe(currencyInfo -> {
-                    // здесь обработка ответа + запись в БД
+                    // local storage writing may be used here
                     callback.currencyLoaded(currencyInfo);
                     }, error -> {}
                 );

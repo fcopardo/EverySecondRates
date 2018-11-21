@@ -5,6 +5,7 @@ import java.util.Objects;
 public class CurrencyRate implements Cloneable {
     private String name;
     private Double value;
+    private boolean isBase;
 
     public CurrencyRate() {
     }
@@ -12,6 +13,13 @@ public class CurrencyRate implements Cloneable {
     public CurrencyRate(String name, Double value) {
         this.name = name;
         this.value = value;
+        this.isBase = false;
+    }
+
+    public CurrencyRate(String name, Double value, boolean isBase) {
+        this.name = name;
+        this.value = value;
+        this.isBase = isBase;
     }
 
     public String getName() {
@@ -28,6 +36,14 @@ public class CurrencyRate implements Cloneable {
 
     public void setValue(Double value) {
         this.value = value;
+    }
+
+    public boolean isBase() {
+        return isBase;
+    }
+
+    public void setBase(boolean base) {
+        isBase = base;
     }
 
     @Override
