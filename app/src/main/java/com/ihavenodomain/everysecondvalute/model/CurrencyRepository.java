@@ -10,11 +10,14 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class CurrencyRepository {
-    private static final CurrencyRepository ourInstance = new CurrencyRepository();
 
+    private CurrencyInfo baseCurrency;
+
+    private static final CurrencyRepository ourInstance = new CurrencyRepository();
     public static CurrencyRepository getInstance() {
         return ourInstance;
     }
+
 
     public CurrencyRepository() {
     }
